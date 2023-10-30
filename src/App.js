@@ -1,25 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { Suspense } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import "./App.css";
+import { Header } from "./components/Header";
+import { Bridge } from "./components/Bridge";
+import { Spinner } from "./components/layout/Spinner";
+import { ThemeProvider } from "./state/ThemeContext";
 
-function App() {
+export const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider>
+      <Suspense fallback={<Spinner />}>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Bridge />} />
+          <Route path="/bridge" element={<Bridge />} />
+          <Route path="/bridge/:chain" element={<Spinner />} />
+          <Route path="*" element={<Navigate replace to="/" />} />
+        </Routes>
+      </Suspense>
+    </ThemeProvider>
   );
-}
-
-export default App;
+};
