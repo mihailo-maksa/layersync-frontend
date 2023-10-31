@@ -17,30 +17,105 @@ export const networkConfig = {
   arbitrum: {
     name: "Arbitrum Goerli",
     chainId: 421613,
-    lzChainId: 1000,
+    lzChainId: 10143,
     faucetLink: "https://goerlifaucet.com",
     bridgeLink: "https://bridge.arbitrum.io/?l2ChainId=421613",
+    nativeTokenName: "Ether",
     nativeToken: "ETH",
     rpcUrl: "https://arbitrum-goerli.publicnode.com",
+    blockExplorerUrl: "https://goerli.arbiscan.io",
   },
   bsc: {
     name: "BSC Testnet",
     chainId: 97,
-    lzChainId: 1001,
+    lzChainId: 10102,
     faucetLink: "https://testnet.bnbchain.org/faucet-smart",
     bridgeLink: null,
+    nativeTokenName: "Binance Coin",
     nativeToken: "BNB",
     rpcUrl: "https://bsc-testnet.publicnode.com",
+    blockExplorerUrl: "https://testnet.bscscan.com",
   },
   scroll: {
     name: "Scroll Sepolia",
     chainId: 534351,
-    lzChainId: 1002,
+    lzChainId: 10214,
     faucetLink: "https://sepoliafaucet.com",
     bridgeLink: "https://sepolia.scroll.io/bridge",
+    nativeTokenName: "Ether",
     nativeToken: "ETH",
     rpcUrl: "https://sepolia-rpc.scroll.io",
+    blockExplorerUrl: "https://sepolia.scrollscan.com",
   },
+};
+
+export const arbitrumGoerli = {
+  id: networkConfig.arbitrum.chainId,
+  name: "Arbitrum Goerli",
+  network: "arbitrum",
+  iconUrl:
+    "https://raw.githubusercontent.com/mihailo-maksa/layersync-frontend/main/src/assets/arb.png",
+  iconBackground: "#fff",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    public: { http: [networkConfig.arbitrum.rpcUrl] },
+    default: { http: [networkConfig.arbitrum.rpcUrl] },
+  },
+  blockExplorers: {
+    default: { name: "Etherscan", url: "https://goerli.arbiscan.io" },
+    etherscan: { name: "Etherscan", url: "https://goerli.arbiscan.io" },
+  },
+  testnet: true,
+};
+
+export const bscTestnet = {
+  id: networkConfig.bsc.chainId,
+  name: "BSC Testnet",
+  network: "bsc",
+  iconUrl:
+    "https://raw.githubusercontent.com/mihailo-maksa/layersync-frontend/main/src/assets/bsc.png",
+  iconBackground: "#fff",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Binance Coin",
+    symbol: "BNB",
+  },
+  rpcUrls: {
+    public: { http: [networkConfig.bsc.rpcUrl] },
+    default: { http: [networkConfig.bsc.rpcUrl] },
+  },
+  blockExplorers: {
+    default: { name: "BscScan", url: "https://testnet.bscscan.com" },
+    etherscan: { name: "BscScan", url: "https://testnet.bscscan.com" },
+  },
+  testnet: true,
+};
+
+export const scrollSepolia = {
+  id: networkConfig.scroll.chainId,
+  name: "Scroll Sepolia",
+  network: "scroll",
+  iconUrl:
+    "https://raw.githubusercontent.com/mihailo-maksa/layersync-frontend/main/src/assets/scroll.png",
+  iconBackground: "#fff",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    public: { http: [networkConfig.scroll.rpcUrl] },
+    default: { http: [networkConfig.scroll.rpcUrl] },
+  },
+  blockExplorers: {
+    default: { name: "Scrollscan", url: "https://sepolia.scrollscan.com" },
+    etherscan: { name: "Scrollscan", url: "https://sepolia.scrollscan.com" },
+  },
+  testnet: true,
 };
 
 export const supportedChains = ["arbitrum", "bsc", "scroll"];
@@ -84,21 +159,24 @@ export const getLSBalance = async (chain, address) => {
 };
 
 export const getLayerZeroFee = async (srcChain, dstChain, address, amount) => {
-  const lsContract = await getLSContract(srcChain);
+  try {
+    const lsContract = await getLSContract(srcChain);
 
-  const lzFees = await lsContract.estimateSendFee(
-    networkConfig[dstChain].lzChainId,
-    address.toLowerCase(),
-    ethers.utils.parseEther(amount.toString()),
-    false,
-    "0x"
-  );
-  const nativeFee = ethers.utils.formatEther(lzFees[0].toString());
+    const lzFees = await lsContract.estimateSendFee(
+      networkConfig[dstChain].lzChainId,
+      address.toLowerCase(),
+      ethers.utils.parseEther(amount.toString()),
+      false,
+      "0x"
+    );
+    const nativeFee = ethers.utils.formatEther(lzFees[0].toString());
 
-  return nativeFee;
+    return nativeFee;
+  } catch (error) {
+    console.error(error);
+  }
 };
 
-//
 export const mintTokens = async (chain, address, amount) => {
   if (!supportedChains.includes(chain)) {
     throw new Error(`Chain ${chain} is not supported.`);
@@ -120,7 +198,6 @@ export const mintTokens = async (chain, address, amount) => {
   console.log("minted");
 };
 
-//  "function sendFrom(address _from, uint16 _dstChainId, bytes _toAddress, uint256 _amount, address _refundAddress, address _zroPaymentAddress, bytes _adapterParams) external payable",
 export const bridgeTokens = async (address, srcChain, dstChain, amount) => {
   if (
     !supportedChains.includes(srcChain) ||
@@ -136,7 +213,7 @@ export const bridgeTokens = async (address, srcChain, dstChain, amount) => {
   const web3Signer = await getWeb3Signer();
 
   const lsContract = new ethers.Contract(
-    layerSyncAddresses[dstChain],
+    layerSyncAddresses[srcChain],
     layersyncAbi,
     web3Signer
   );
@@ -157,4 +234,47 @@ export const bridgeTokens = async (address, srcChain, dstChain, amount) => {
   );
   await tx.wait(1);
   console.log("bridged");
+};
+
+export const addLSToWallet = async (chain) => {
+  try {
+    await window.ethereum.request({
+      method: "wallet_watchAsset",
+      params: {
+        type: "ERC20",
+        options: {
+          address: layerSyncAddresses[chain],
+          symbol: "LS",
+          decimals: 18,
+          image:
+            "https://raw.githubusercontent.com/mihailo-maksa/layersync-frontend/main/src/assets/layerSync.png",
+        },
+      },
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const addNetwork = async (chain) => {
+  try {
+    await window.ethereum.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: ethers.utils.hexValue(networkConfig[chain].chainId),
+          chainName: networkConfig[chain].name,
+          nativeCurrency: {
+            name: networkConfig[chain].nativeTokenName,
+            symbol: networkConfig[chain].nativeToken,
+            decimals: 18,
+          },
+          rpcUrls: [networkConfig[chain].rpcUrl],
+          blockExplorerUrls: [networkConfig[chain].blockExplorerUrl],
+        },
+      ],
+    });
+  } catch (error) {
+    console.error(error);
+  }
 };
